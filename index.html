@@ -6,12 +6,71 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>distorsion fooBar</title>
     <style>
-    
+        body{
+            display: grid;
+            align-items: center;
+            justify-items: center;
+        }
+    #wrapper {
+        position: relative;
+        margin: auto; }
+		#meter {
+		    width: 100%; 
+            height: 100%;
+		    transform: rotateX(180deg);
+		}
+		.circle {
+            fill: none;
+            transition: all 2s ease;
+            }
+		.range { 
+            stroke-width: 60; 
+            }
+		.outline, #mask {
+		    stroke: #F1F1F1; 
+		    stroke-width: 65;
+		}
+	
+		#meter_needle {
+		    height: 40%;
+		    left: 0;
+		    margin: auto;
+		    position: absolute;
+		    right: 0;
+		    top: 10%;
+		    transform-origin: bottom center;
+		    transform: rotate(270deg);
+            transition: all 2s ease;
+		}
     </style>
 </head>
 <body>
+    <h1>People in queue over time</h1>
     
-    <h1 id="queue">People in queue: <span></span></h1>
+            <svg id="graph" viewBox="0 0 400 50" xmlns="http://www.w3.org/2000/svg">
+
+                <polyline points=""
+                          fill="none" stroke="black" stroke-width="1px" />
+              </svg>
+            
+    <h1 id="queue">People currently in queue: <span></span></h1>
+    <div id="wrapper">
+        <svg id="meter">
+            <circle id="outline_curves" class="circle outline"  cx="50%" cy="50%">
+            </circle>
+            <circle id="low" class="circle range" cx="50%" cy="50%" stroke="#FDE47F">
+            </circle>
+            <circle id="avg" class="circle range" cx="50%" cy="50%" stroke="#7CCCE5">
+            </circle>
+            <circle id="high" class="circle range" cx="50%" cy="50%" stroke="#E04644">
+            </circle>
+            <circle id="mask" class="circle" cx="50%" cy="50%" >
+            </circle>
+            <circle id="outline_ends" class="circle outline" cx="50%" cy="50%">
+            </circle>
+        </svg>
+        <img id="meter_needle" src="svg-meter-gauge-needle.svg" alt="">
+        </div>
 
     <script>
     window.addEventListener('DOMContentLoaded', () => {
@@ -24,10 +83,56 @@
                 .then( data => {
                     // console.log(data);
                    // console.log(data.inQueue);
-                   
+                   const myArr = [x , 50 - data.inQueue];
+                   x += 10;
+                   pointsArr.push(myArr);
+                   document.querySelector('#graph polyline').setAttribute('points', pointsArr.join(" "))
                    document.querySelector('#queue span').textContent = data.inQueue;
+                   percent = Number(data.inQueue) * 4;
+                   range_change_event();
                 });
     }
+    // counter for graph points
+    let x = 0;
+
+    // array with points for the polyline
+    let pointsArr = [];
+
+    /* set radius for all circles */
+		const r = 300;
+		const circles = document.querySelectorAll('.circle');
+		circles.forEach( c => c.setAttribute('r', r) );
+		/* set meter's wrapper dimension */
+		const meter_dimension = (r * 2) + 100;
+		const wrapper = document.querySelector('#wrapper');
+		wrapper.style.width = meter_dimension + 'px';
+		wrapper.style.height = meter_dimension + 'px';
+		/* add strokes to circles  */
+		const cf = 2 * Math.PI * r;
+		const semi_cf = cf / 2;
+		const semi_cf_1by3 = semi_cf / 3;
+		const semi_cf_2by3 = semi_cf_1by3 * 2;
+		document.querySelector('#outline_curves')
+		    .setAttribute('stroke-dasharray', semi_cf + ',' + cf);
+		document.querySelector('#low')
+		    .setAttribute('stroke-dasharray', semi_cf + ',' + cf);
+		document.querySelector('#avg')
+		    .setAttribute('stroke-dasharray', semi_cf_2by3 + ',' + cf);
+		document.querySelector('#high')
+		    .setAttribute('stroke-dasharray', semi_cf_1by3 + ',' + cf);
+		document.querySelector('#outline_ends')
+		    .setAttribute('stroke-dasharray', 2 + ',' + (semi_cf - 2));
+		document.querySelector('#mask')
+		    .setAttribute('stroke-dasharray', semi_cf + ',' + cf);
+		/*bind range slider event*/
+        let percent;
+		const mask = document.querySelector('#mask');
+		const meter_needle =  document.querySelector('#meter_needle');
+		function range_change_event() {
+		    let meter_value = semi_cf - ((percent * semi_cf) / 100);
+		    mask.setAttribute('stroke-dasharray', meter_value + ',' + cf);
+		    meter_needle.style.transform = 'rotate(' + (270 + ((percent * 180) / 100)) + 'deg)';
+		}
     </script>
 </body>
 </html>
